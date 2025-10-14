@@ -25,7 +25,6 @@ const QuillEditor = ({ value, onChange }) => {
 		placeholder: 'Describe tu pregunta en detalle... Puedes usar formato de texto, listas, código, imágenes, etc.',
 	})
 
-	// Sincronizar cambios del editor con el estado padre
 	useEffect(() => {
 		if (quill) {
 			quill.on('text-change', () => {
@@ -35,11 +34,9 @@ const QuillEditor = ({ value, onChange }) => {
 		}
 	}, [quill, onChange])
 
-	// Sincronizar el valor inicial o cambios externos
 	useEffect(() => {
 		if (quill && value !== undefined) {
 			const currentContent = quill.root.innerHTML
-			// Solo actualizar si el contenido es diferente para evitar loops
 			if (value !== currentContent && value !== '') quill.root.innerHTML = value
 		}
 	}, [quill, value])
@@ -51,19 +48,18 @@ const QuillEditor = ({ value, onChange }) => {
 	)
 }
 
-const PreviewPanel = ({ title, description }) => {
-	// Limpiar el HTML vacío de Quill
+const PreviewPanel = ({ title, description, isAnswerMode }) => {
 	const cleanDescription = description && description !== '' ? description : ''
 
 	return (
 		<div className='h-full flex flex-col'>
 			<div className='flex-1 overflow-y-auto p-4'>
-				{/* Vista previa del título */}
-				<h1 className='text-xl font-bold text-gray-900 mb-4 break-words'>
-					{title || <span className='text-gray-400'>Título de tu pregunta</span>}
-				</h1>
+				{!isAnswerMode && (
+					<h1 className='text-xl font-bold text-gray-900 mb-4 break-words'>
+						{title || <span className='text-gray-400'>Título de tu pregunta</span>}
+					</h1>
+				)}
 
-				{/* Vista previa del contenido */}
 				{cleanDescription ? (
 					<div className='preview-content' dangerouslySetInnerHTML={{ __html: cleanDescription }} />
 				) : (
@@ -74,12 +70,27 @@ const PreviewPanel = ({ title, description }) => {
 	)
 }
 
-export function CreatePostModal({ isOpen, onClose, onSubmit }) {
+export function CreatePostModal({
+	isOpen,
+	onClose,
+	onSubmit,
+	initialData = null,
+	isEditMode = false,
+	isAnswerMode = false, // Nueva prop para modo respuesta
+}) {
 	const [title, setTitle] = useState('')
 	const [description, setDescription] = useState('')
 	const [isSubmitting, setIsSubmitting] = useState(false)
 	const [errors, setErrors] = useState({})
 	const [isExpanded, setIsExpanded] = useState(false)
+
+	// Cargar datos iniciales cuando hay initialData (modo edición)
+	useEffect(() => {
+		if (isOpen && initialData && isEditMode) {
+			setTitle(initialData.title || '')
+			setDescription(initialData.description || '')
+		}
+	}, [isOpen, initialData, isEditMode])
 
 	// Resetear formulario cuando se cierra el modal
 	useEffect(() => {
@@ -88,30 +99,32 @@ export function CreatePostModal({ isOpen, onClose, onSubmit }) {
 		}
 	}, [isOpen])
 
-	// Validar formulario
 	const validateForm = () => {
 		const newErrors = {}
 
-		if (!title.trim()) {
-			newErrors.title = 'El título es requerido'
-		} else if (title.trim().length < 10) {
-			newErrors.title = 'El título debe tener al menos 10 caracteres'
-		} else if (title.trim().length > 200) {
-			newErrors.title = 'El título no puede exceder 200 caracteres'
+		// Solo validar título si NO es modo respuesta
+		if (!isAnswerMode) {
+			if (!title.trim()) {
+				newErrors.title = 'El título es requerido'
+			} else if (title.trim().length < 10) {
+				newErrors.title = 'El título debe tener al menos 10 caracteres'
+			} else if (title.trim().length > 200) {
+				newErrors.title = 'El título no puede exceder 200 caracteres'
+			}
 		}
 
-		// Validar que la descripción no esté vacía (considerando el HTML de Quill)
 		const tempDiv = document.createElement('div')
 		tempDiv.innerHTML = description
 		const textContent = tempDiv.textContent || tempDiv.innerText || ''
 
-		if (!textContent.trim()) newErrors.description = 'La descripción es requerida'
+		if (!textContent.trim()) {
+			newErrors.description = isAnswerMode ? 'El contenido de la respuesta es requerido' : 'La descripción es requerida'
+		}
 
 		setErrors(newErrors)
 		return Object.keys(newErrors).length === 0
 	}
 
-	// Enviar formulario
 	const handleSubmit = async e => {
 		e.preventDefault()
 
@@ -120,30 +133,34 @@ export function CreatePostModal({ isOpen, onClose, onSubmit }) {
 		setIsSubmitting(true)
 
 		try {
-			await onSubmit({
-				title: title.trim(),
-				description,
-			})
+			// Preparar datos según el modo
+			const submitData = isAnswerMode
+				? { description } // Solo enviar descripción para respuestas
+				: { title: title.trim(), description } // Enviar título y descripción para posts
 
-			// Limpiar formulario después del éxito
+			await onSubmit(submitData)
+
 			resetForm()
 			onClose()
 		} catch (error) {
-			console.error('Error al crear la pregunta:', error)
+			console.error(
+				`Error al ${isEditMode ? 'actualizar' : 'crear'} ${isAnswerMode ? 'la respuesta' : 'la pregunta'}:`,
+				error
+			)
 		} finally {
 			setIsSubmitting(false)
 		}
 	}
 
-	// Resetear formulario
 	const resetForm = () => {
-		setTitle('')
-		setDescription('')
+		if (!isEditMode) {
+			setTitle('')
+			setDescription('')
+		}
 		setErrors({})
 		setIsExpanded(false)
 	}
 
-	// Cerrar modal
 	const handleClose = () => {
 		if (!isSubmitting) {
 			resetForm()
@@ -152,6 +169,21 @@ export function CreatePostModal({ isOpen, onClose, onSubmit }) {
 	}
 
 	if (!isOpen) return null
+
+	// Configuración dinámica según el modo
+	const modalConfig = {
+		title: isAnswerMode ? 'Nueva Respuesta' : isEditMode ? 'Editar Pregunta' : 'Nueva Pregunta',
+		subtitle: isAnswerMode
+			? 'Comparte tu solución o conocimiento'
+			: isEditMode
+			? 'Actualiza tu pregunta'
+			: 'Comparte tu pregunta con la comunidad',
+		submitLabel: isAnswerMode ? 'Publicar Respuesta' : isEditMode ? 'Actualizar Pregunta' : 'Publicar Pregunta',
+		submittingLabel: isAnswerMode ? 'Publicando...' : isEditMode ? 'Actualizando...' : 'Publicando...',
+		editorPlaceholder: isAnswerMode
+			? 'Escribe tu respuesta aquí... Puedes usar formato de texto, listas, código, imágenes, etc.'
+			: 'Describe tu pregunta en detalle... Puedes usar formato de texto, listas, código, imágenes, etc.',
+	}
 
 	const previewStyles = `
 		.preview-content {
@@ -217,10 +249,8 @@ export function CreatePostModal({ isOpen, onClose, onSubmit }) {
 			<style dangerouslySetInnerHTML={{ __html: previewStyles }} />
 
 			<div className='fixed inset-0 z-50 overflow-y-auto'>
-				{/* Overlay */}
 				<div className='fixed inset-0 bg-black/50 transition-opacity' onClick={handleClose} />
 
-				{/* Modal Container */}
 				<div
 					className={`flex ${
 						isExpanded ? 'items-center justify-center min-h-screen' : 'items-end justify-center min-h-screen'
@@ -229,14 +259,12 @@ export function CreatePostModal({ isOpen, onClose, onSubmit }) {
 						className={`relative bg-white flex flex-col transition-all duration-300 ${
 							isExpanded ? 'w-full max-w-full h-[95vh] rounded-2xl' : 'w-full max-w-6xl rounded-2xl max-h-[70vh]'
 						}`}>
-						{/* Header */}
 						<div className='flex items-center justify-between px-6 py-3 border-b border-gray-200 flex-shrink-0'>
 							<div className='flex-1'>
-								<h2 className='font-bold text-gray-900'>Nueva Pregunta</h2>
-								<p className='text-xs text-gray-500'>Comparte tu pregunta con la comunidad</p>
+								<h2 className='font-bold text-gray-900'>{modalConfig.title}</h2>
+								<p className='text-xs text-gray-500'>{modalConfig.subtitle}</p>
 							</div>
 							<div className='flex items-center space-x-2'>
-								{/* Botón Expandir/Contraer */}
 								<button
 									onClick={() => setIsExpanded(!isExpanded)}
 									disabled={isSubmitting}
@@ -244,7 +272,6 @@ export function CreatePostModal({ isOpen, onClose, onSubmit }) {
 									aria-label={isExpanded ? 'Contraer' : 'Expandir'}>
 									{isExpanded ? <Minimize2 className='h-4 w-4' /> : <Maximize2 className='h-4 w-4' />}
 								</button>
-								{/* Botón Cerrar */}
 								<button
 									onClick={handleClose}
 									disabled={isSubmitting}
@@ -255,48 +282,53 @@ export function CreatePostModal({ isOpen, onClose, onSubmit }) {
 							</div>
 						</div>
 
-						{/* Body - Scrollable */}
 						<div className='flex-1 overflow-y-auto'>
 							<div className='flex h-full'>
-								{/* Panel de Edición */}
 								<div className='flex-1 border-r border-gray-200'>
 									<div className='p-6 space-y-6'>
-										{/* Título */}
-										<div>
-											<label className='block text-sm font-semibold text-gray-700 mb-2'>
-												Título<span className='text-red-500'>*</span>
-											</label>
-											<input
-												type='text'
-												value={title}
-												onChange={e => {
-													setTitle(e.target.value)
-													if (errors.title) setErrors(prev => ({ ...prev, title: '' }))
-												}}
-												placeholder='Ej: ¿Cómo puedo optimizar mi código React?'
-												maxLength={200}
-												className={`w-full p-2 px-0 text-sm border-b text-gray-900 border-gray-300 placeholder-gray-400 transition-colors duration-200 focus:outline-none ${
-													errors.title ? 'border-red-400 focus:border-red-600' : 'focus:border-gray-600'
-												} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
-												disabled={isSubmitting}
-											/>
-											<div className='flex justify-between items-start mt-2'>
-												{errors.title && (
-													<div className='flex items-center space-x-1 text-red-600 text-xs'>
-														<AlertCircle className='h-4 w-4' />
-														<span>{errors.title}</span>
-													</div>
-												)}
-												<span className='text-xs text-gray-400 ml-auto'>{title.length}/200</span>
+										{/* Campo de título - Solo mostrar si NO es modo respuesta */}
+										{!isAnswerMode && (
+											<div>
+												<label className='block text-sm font-semibold text-gray-700 mb-2'>
+													Título<span className='text-red-500'>*</span>
+												</label>
+												<input
+													type='text'
+													value={title}
+													onChange={e => {
+														setTitle(e.target.value)
+														if (errors.title) setErrors(prev => ({ ...prev, title: '' }))
+													}}
+													placeholder='Ej: ¿Cómo puedo optimizar mi código React?'
+													maxLength={200}
+													className={`w-full p-2 px-0 text-sm border-b text-gray-900 border-gray-300 placeholder-gray-400 transition-colors duration-200 focus:outline-none ${
+														errors.title ? 'border-red-400 focus:border-red-600' : 'focus:border-gray-600'
+													} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+													disabled={isSubmitting}
+												/>
+												<div className='flex justify-between items-start mt-2'>
+													{errors.title && (
+														<div className='flex items-center space-x-1 text-red-600 text-xs'>
+															<AlertCircle className='h-4 w-4' />
+															<span>{errors.title}</span>
+														</div>
+													)}
+													<span className='text-xs text-gray-400 ml-auto'>{title.length}/200</span>
+												</div>
 											</div>
-										</div>
+										)}
 
-										{/* Descripción con Editor Quill */}
 										<div>
 											<label className='block text-sm font-semibold text-gray-700 mb-2'>
-												Descripción<span className='text-red-500'>*</span>
+												{isAnswerMode ? 'Contenido' : 'Descripción'}
+												<span className='text-red-500'>*</span>
 											</label>
-											<div className={`overflow-hidden ${errors.description ? 'border-red-300 border' : ''}`}>
+											<p className='text-xs text-gray-500 mt-2'>
+												{isAnswerMode
+													? 'Explica tu solución de forma clara y detallada. Usa la barra de herramientas para formatear texto, añadir código, imágenes, etc.'
+													: 'Explica tu problema con el mayor detalle posible. Usa la barra de herramientas para formatear texto, añadir imágenes, código, etc.'}
+											</p>
+											<div className={`overflow-hidden pt-2 ${errors.description ? 'border-red-300 border' : ''}`}>
 												<QuillEditor
 													value={description}
 													onChange={value => {
@@ -305,32 +337,25 @@ export function CreatePostModal({ isOpen, onClose, onSubmit }) {
 													}}
 												/>
 											</div>
-											{errors.description ? (
+											{errors.description && (
 												<div className='flex items-center space-x-1 mt-2 text-red-600 text-xs'>
 													<AlertCircle className='h-4 w-4' />
 													<span>{errors.description}</span>
 												</div>
-											) : (
-												<p className='text-xs text-gray-500 mt-2'>
-													Explica tu problema con el mayor detalle posible. Usa la barra de herramientas para formatear
-													texto, añadir imágenes, código, etc.
-												</p>
 											)}
 										</div>
 									</div>
 								</div>
 
-								{/* Panel de Vista Previa */}
 								<div className='flex-1 flex flex-col bg-gray-50'>
 									<div className='px-4 py-3 border-b border-gray-200 bg-white'>
 										<h3 className='text-sm font-semibold text-gray-700'>Vista Previa</h3>
 									</div>
-									<PreviewPanel title={title} description={description} />
+									<PreviewPanel title={title} description={description} isAnswerMode={isAnswerMode} />
 								</div>
 							</div>
 						</div>
 
-						{/* Footer con botones */}
 						<div className='px-6 py-3 border-t border-gray-200 flex-shrink-0'>
 							<div className='flex items-center justify-between'>
 								<p className='text-xs text-gray-500'>
@@ -352,10 +377,10 @@ export function CreatePostModal({ isOpen, onClose, onSubmit }) {
 										{isSubmitting ? (
 											<>
 												<Loader2 className='h-4 w-4 animate-spin' />
-												<span>Publicando...</span>
+												<span>{modalConfig.submittingLabel}</span>
 											</>
 										) : (
-											<span>Publicar Pregunta</span>
+											<span>{modalConfig.submitLabel}</span>
 										)}
 									</button>
 								</div>
