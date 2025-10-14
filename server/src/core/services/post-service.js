@@ -35,7 +35,7 @@ class PostService {
 	}
 
 	// Obtener posts con filtros
-	async getPosts({ search, status, is_solved, page = 1, limit = 10, authorId } = {}) {
+	async getPosts({ search, status, is_solved, page = 1, limit = 10, authorId, includeDeleted = true } = {}) {
 		await this.initialize()
 
 		const where = {}
@@ -56,6 +56,7 @@ class PostService {
 		const offset = (page - 1) * limit
 
 		const { rows, count } = await this.models.Post.findAndCountAll({
+			paranoid: !includeDeleted,
 			where,
 			limit,
 			offset,
@@ -78,10 +79,11 @@ class PostService {
 	}
 
 	// Obtener post por ID
-	async getPostById(id, includeDeleted = false, incrementView = false) {
+	async getPostById(id, incrementView = false, includeDeleted = true) {
 		await this.initialize()
 
 		const options = {
+			paranoid: !includeDeleted,
 			where: { id },
 			include: [
 				{
@@ -90,7 +92,6 @@ class PostService {
 					attributes: ['id', 'first_name', 'last_name', 'email'],
 				},
 			],
-			paranoid: !includeDeleted,
 		}
 
 		const post = await this.models.Post.findOne(options)

@@ -83,6 +83,11 @@ export const PostModel = sequelize => {
 			as: 'likes',
 			onDelete: 'CASCADE',
 		})
+		Post.hasMany(models.Answer, {
+			foreignKey: 'post_id',
+			as: 'answers',
+			onDelete: 'CASCADE',
+		})
 	}
 
 	return Post
