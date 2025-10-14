@@ -11,6 +11,7 @@ export class PostListDTO {
 		this.currentUserHasLiked = post.currentUserHasLiked || false
 		this.createdAt = post.createdAt
 		this.updatedAt = post.updatedAt
+		this.deletedAt = post.deletedAt
 		if (post.author) {
 			this.author = {
 				id: post.author.id,
@@ -39,6 +40,7 @@ export class PostDetailDTO {
 		this.currentUserHasLiked = post.currentUserHasLiked || false
 		this.createdAt = post.createdAt
 		this.updatedAt = post.updatedAt
+		this.deletedAt = post.deletedAt
 		if (post.author) {
 			this.author = {
 				id: post.author.id,
