@@ -1,4 +1,4 @@
-import { Eye, MessageSquare, ThumbsUp } from 'lucide-react'
+import { Eye, Heart, MessageSquare, Share2, ThumbsUp } from 'lucide-react'
 import { Badge } from '../ui/StatusBadge.jsx'
 import { PATH_ROUTES } from '../../common/const/pauthRoute-const.js'
 import { Link } from 'react-router-dom'
@@ -58,6 +58,8 @@ export const PostCard = ({ post }) => {
 		isSolved = false,
 		status,
 		createdAt,
+		updatedAt,
+		deletedAt,
 		author,
 	} = post
 
@@ -114,9 +116,19 @@ export const PostCard = ({ post }) => {
 
 					{/* Badges */}
 					<div className='flex items-center gap-2 mb-4'>
-						{isSolved && <Badge label='Solucionado' variant='success' />}
-						{status === 'closed' && <Badge label='Cerrado' variant='warning' />}
-						{status === 'active' && <Badge label='Abierto' variant='info' />}
+						{deletedAt ? (
+							<Badge label='Removido' variant='error' />
+						) : (
+							<div className='flex items-center gap-2'>
+								{isSolved && <Badge label='Solucionado' variant='success' />}
+								{!isSolved && (
+									<>
+										{status === 'closed' && <Badge label='Cerrado' variant='warning' />}
+										{status === 'active' && <Badge label='Abierto' variant='info' />}
+									</>
+								)}
+							</div>
+						)}
 					</div>
 
 					{/* Meta información - NO interrumpida por la imagen */}
@@ -124,19 +136,19 @@ export const PostCard = ({ post }) => {
 						{/* Stats: Votos, Respuestas, Vistas */}
 						<div className='flex items-center gap-4 text-xs text-gray-500'>
 							<div className='flex items-center gap-1'>
-								<ThumbsUp className='h-4 w-4' />
-								<span>{likesCount} votos</span>
+								<Heart className='h-4 w-4' />
+								<span>{likesCount}</span>
 							</div>
-
 							<div className='flex items-center gap-1'>
 								<MessageSquare className='h-4 w-4' />
-								<span className={answersCount > 0 ? 'text-gray-800 font-medium' : ''}>{answersCount} respuestas</span>
+								<span>{answersCount}</span>
 							</div>
-
+							{/* 
 							<div className='flex items-center gap-1'>
 								<Eye className='h-4 w-4' />
-								<span>{views} vistas</span>
+								<span>{views}</span>
 							</div>
+							*/}
 						</div>
 
 						{/* Autor y fecha */}
