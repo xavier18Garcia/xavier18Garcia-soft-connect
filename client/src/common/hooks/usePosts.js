@@ -21,15 +21,14 @@ export const usePosts = (filters = {}) => {
 			if (!response.success) throw new Error(response.message)
 			return response
 		},
-		staleTime: 2 * 60 * 1000, // 2 minutos
-		gcTime: 5 * 60 * 1000, // 5 minutos
+		staleTime: 2 * 60 * 1000,
+		gcTime: 5 * 60 * 1000,
 	})
 }
 
 // Hook para crear un nuevo post
 export const useCreatePost = () => {
 	const queryClient = useQueryClient()
-
 	return useMutation({
 		mutationFn: async postData => {
 			const response = await postService.create(postData)
@@ -37,7 +36,6 @@ export const useCreatePost = () => {
 			return response.data
 		},
 		onSuccess: () => {
-			// Invalidar las queries de listas de posts para refrescar los datos
 			queryClient.invalidateQueries({ queryKey: postKeys.lists() })
 		},
 	})
@@ -52,15 +50,50 @@ export const usePost = postId => {
 			if (!response.success) throw new Error(response.message || 'Error al cargar el post')
 			return response.data
 		},
-		enabled: !!postId, // Solo ejecutar si hay un postId
-		staleTime: 5 * 60 * 1000, // 5 minutos
+		enabled: !!postId,
+		staleTime: 5 * 60 * 1000,
+	})
+}
+
+// Hook para actualizar un post
+export const useUpdatePost = () => {
+	const queryClient = useQueryClient()
+	return useMutation({
+		mutationFn: async ({ id, data }) => {
+			const response = await postService.update(id, data)
+			if (!response.success) throw new Error(response.message || 'Error al actualizar el post')
+			return response.data
+		},
+		onSuccess: (data, { id }) => {
+			// Actualizar el post específico en cache
+			queryClient.invalidateQueries({ queryKey: postKeys.detail(id) })
+			// También invalidar las listas que podrían contener este post
+			queryClient.invalidateQueries({ queryKey: postKeys.lists() })
+		},
+	})
+}
+
+// Hook para eliminar un post
+export const useSoftDeletePost = () => {
+	const queryClient = useQueryClient()
+	return useMutation({
+		mutationFn: async postId => {
+			const response = await postService.softDelete(postId)
+			if (!response.success) throw new Error(response.message || 'Error al eliminar el post')
+			return response.data
+		},
+		onSuccess: (data, postId) => {
+			// Invalidar todas las listas de posts
+			queryClient.invalidateQueries({ queryKey: postKeys.lists() })
+			// Remover el post específico del cache
+			queryClient.removeQueries({ queryKey: postKeys.detail(postId) })
+		},
 	})
 }
 
 // Hook para toggle like
 export const useToggleLike = () => {
 	const queryClient = useQueryClient()
-
 	return useMutation({
 		mutationFn: async postId => {
 			const response = await postService.toggleLike(postId)
@@ -68,11 +101,8 @@ export const useToggleLike = () => {
 			return response.data
 		},
 		onSuccess: (data, postId) => {
-			// Actualizar el post específico en cache
 			queryClient.invalidateQueries({ queryKey: postKeys.detail(postId) })
-			// También invalidar las listas que podrían contener este post
 			queryClient.invalidateQueries({ queryKey: postKeys.lists() })
-			// Invalidar el estado de like específico
 			queryClient.invalidateQueries({ queryKey: postKeys.likeStatusDetail(postId) })
 		},
 	})
@@ -87,16 +117,15 @@ export const usePostLikeStatus = postId => {
 			if (!response.success) throw new Error(response.message || 'Error al verificar like')
 			return response.data
 		},
-		enabled: !!postId, // Solo ejecutar si hay un postId
-		staleTime: 2 * 60 * 1000, // 2 minutos
-		gcTime: 5 * 60 * 1000, // 5 minutos
+		enabled: !!postId,
+		staleTime: 2 * 60 * 1000,
+		gcTime: 5 * 60 * 1000,
 	})
 }
 
 // Hook para marcar como resuelto
 export const useMarkAsSolved = () => {
 	const queryClient = useQueryClient()
-
 	return useMutation({
 		mutationFn: async postId => {
 			const response = await postService.markAsSolved(postId)
