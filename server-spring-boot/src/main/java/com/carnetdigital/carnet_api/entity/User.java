@@ -27,8 +27,8 @@ import java.util.UUID;
         @Index(name = "idx_active", columnList = "active")
     }
 )
-@SQLDelete(sql = "UPDATE users SET deletedAt = NOW() WHERE id = ?")
-@SQLRestriction("deletedAt IS NULL")
+@SQLDelete(sql = "UPDATE users SET \"deletedAt\" = NOW() WHERE id = ?")
+@SQLRestriction("\"deletedAt\" IS NULL")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -60,23 +60,23 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)
-    private UserRole role = UserRole.STUDENT;
+    private UserRole role = UserRole.student;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private UserStatus status = UserStatus.PENDING;
+    private UserStatus status = UserStatus.pending;
 
     @Column(name = "active", nullable = false)
     private Boolean active = true;
 
-    @Column(name = "createdAt")
+    @Column(name = "\"createdAt\"")
     private LocalDateTime createdAt;
+  
+@Column(name = "\"updatedAt\"")
+private LocalDateTime updatedAt;
 
-    @Column(name = "updatedAt")
-    private LocalDateTime updatedAt;
-
-    @Column(name = "deletedAt")
-    private LocalDateTime deletedAt;
+@Column(name = "\"deletedAt\"")
+private LocalDateTime deletedAt;
 
     // Relación con Token
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -84,10 +84,10 @@ public class User {
 
     // Enums
     public enum UserRole {
-        ADMIN, STUDENT
+        admin, student
     }
 
     public enum UserStatus {
-        ACTIVE, INACTIVE, PENDING
+        active, inactive, pending
     }
 }

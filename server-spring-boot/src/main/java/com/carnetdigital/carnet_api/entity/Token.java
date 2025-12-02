@@ -60,11 +60,11 @@ public class Token {
     private TokenType tokenType;
 
     @CreationTimestamp
-    @Column(name = "createdAt", nullable = false, updatable = false)
+    @Column(name = "createdAt", updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updatedAt", nullable = false)
+    @Column(name = "updatedAt")
     private LocalDateTime updatedAt;
 
     @Column(name = "deletedAt")
@@ -77,16 +77,16 @@ public class Token {
             LocalDateTime now = LocalDateTime.now();
             switch (this.tokenType) {
                 case ACCESS:
-                    this.expiresAt = now.plusDays(1); // 1 día
+                    this.expiresAt = now.plusDays(1);
                     break;
                 case REFRESH:
-                    this.expiresAt = now.plusDays(7); // 7 días
+                    this.expiresAt = now.plusDays(7);
                     break;
                 case RESET:
-                    this.expiresAt = now.plusHours(24); // 24 horas
+                    this.expiresAt = now.plusHours(24);
                     break;
                 case VERIFICATION:
-                    this.expiresAt = now.plusHours(48); // 48 horas
+                    this.expiresAt = now.plusHours(48);
                     break;
             }
         }
@@ -101,7 +101,6 @@ public class Token {
         return !this.used && !isExpired();
     }
 
-    // Enum
     public enum TokenType {
         ACCESS, REFRESH, RESET, VERIFICATION
     }

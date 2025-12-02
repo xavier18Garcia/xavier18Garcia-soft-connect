@@ -130,7 +130,7 @@ public class UserService {
         User user = userRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
         user.setActive(true);
-        user.setStatus(UserStatus.ACTIVE);
+        user.setStatus(UserStatus.active);
         userRepository.save(user);
     }
 
@@ -139,7 +139,7 @@ public class UserService {
         User user = userRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
         user.setActive(false);
-        user.setStatus(UserStatus.INACTIVE);
+        user.setStatus(UserStatus.inactive);
         userRepository.save(user);
     }
 
