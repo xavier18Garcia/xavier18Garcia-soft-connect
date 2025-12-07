@@ -95,6 +95,9 @@ public class UserMapper {
         if (request.getStatus() != null) {
             user.setStatus(request.getStatus());
         }
+        if (request.getRole() != null) {
+            user.setRole(request.getRole());
+        }
         if (request.getActive() != null) {
             user.setActive(request.getActive());
         }

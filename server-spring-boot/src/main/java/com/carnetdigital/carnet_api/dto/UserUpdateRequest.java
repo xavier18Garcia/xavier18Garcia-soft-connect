@@ -1,5 +1,6 @@
 package com.carnetdigital.carnet_api.dto;
 
+import com.carnetdigital.carnet_api.entity.User.UserRole;
 import com.carnetdigital.carnet_api.entity.User.UserStatus;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
@@ -25,6 +26,8 @@ public class UserUpdateRequest {
     private String email;
     
     private UserStatus status;
+
+    private UserRole role;
     
     private Boolean active;
 }
