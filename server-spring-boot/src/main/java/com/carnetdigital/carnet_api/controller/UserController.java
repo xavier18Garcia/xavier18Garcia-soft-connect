@@ -4,17 +4,18 @@ import com.carnetdigital.carnet_api.dto.*;
 import com.carnetdigital.carnet_api.entity.User.UserRole;
 import com.carnetdigital.carnet_api.entity.User.UserStatus;
 import com.carnetdigital.carnet_api.service.UserService;
+import com.carnetdigital.carnet_api.helpers.ApiResponseFactory;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
 public class UserController {
 
@@ -23,110 +24,214 @@ public class UserController {
     // ==================== CREATE ====================
     
     @PostMapping
-    public ResponseEntity<UserResponse> createUser(@Valid @RequestBody UserCreateRequest request) {
+    public ResponseEntity<ApiResponse<UserResponse>> createUser(@Valid @RequestBody UserCreateRequest request) {
         UserResponse user = userService.createUser(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(user);
+        return ApiResponseFactory.created(user, "Usuario creado con éxito");
     }
 
     // ==================== READ ====================
     
     @GetMapping
-    public ResponseEntity<List<UserResponse>> getAllUsers() {
-        List<UserResponse> users = userService.getAllUsers();
-        return ResponseEntity.ok(users);
+    public ResponseEntity<?> getAllUsers(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDirection
+    ) {
+        // Si page o size están presentes, usar paginación
+        if (page != null && size != null) {
+            PagedResponse<UserResponse> users = userService.getAllUsersIncludingDeleted(page, size, sortBy, sortDirection);
+            return ApiResponseFactory.success(
+                users,
+                "Usuarios recuperados exitosamente",
+                Map.of(
+                    "paginated", true,
+                    "sortBy", sortBy,
+                    "sortDirection", sortDirection
+                )
+            );
+        } else {
+            // Sin paginación (todos los registros)
+            List<UserResponse> users = userService.getAllUsers();
+            return ApiResponseFactory.success(
+                users,
+                "Usuarios recuperados exitosamente",
+                Map.of(
+                    "paginated", false,
+                    "totalRecords", users.size()
+                )
+            );
+        }
     }
     
     @GetMapping("/{id}")
-    public ResponseEntity<UserDetailResponse> getUserById(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<UserDetailResponse>> getUserById(@PathVariable UUID id) {
         UserDetailResponse user = userService.getUserById(id);
-        return ResponseEntity.ok(user);
+        return ApiResponseFactory.success(user, "Usuario recuperado con éxito", null);
     }
     
     @GetMapping("/email/{email}")
-    public ResponseEntity<UserResponse> getUserByEmail(@PathVariable String email) {
+    public ResponseEntity<ApiResponse<UserResponse>> getUserByEmail(@PathVariable String email) {
         UserResponse user = userService.getUserByEmail(email);
-        return ResponseEntity.ok(user);
+        return ApiResponseFactory.success(user, "Usuario recuperado con éxito", null);
     }
     
     @GetMapping("/role/{role}")
-    public ResponseEntity<List<UserResponse>> getUsersByRole(@PathVariable UserRole role) {
-        List<UserResponse> users = userService.getUsersByRole(role);
-        return ResponseEntity.ok(users);
+    public ResponseEntity<?> getUsersByRole(
+            @PathVariable UserRole role,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size
+    ) {
+        if (page != null && size != null) {
+            PagedResponse<UserResponse> users = userService.getUsersByRole(role, page, size);
+            return ApiResponseFactory.success(
+                users, 
+                "Usuarios recuperados exitosamente", 
+                Map.of("role", role.name(), "paginated", true)
+            );
+        } else {
+            List<UserResponse> users = userService.getUsersByRole(role);
+            return ApiResponseFactory.success(
+                users, 
+                "Usuarios recuperados exitosamente", 
+                Map.of("role", role.name(), "count", users.size(), "paginated", false)
+            );
+        }
     }
     
     @GetMapping("/status/{status}")
-    public ResponseEntity<List<UserResponse>> getUsersByStatus(@PathVariable UserStatus status) {
-        List<UserResponse> users = userService.getUsersByStatus(status);
-        return ResponseEntity.ok(users);
+    public ResponseEntity<?> getUsersByStatus(
+            @PathVariable UserStatus status,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size
+    ) {
+        if (page != null && size != null) {
+            PagedResponse<UserResponse> users = userService.getUsersByStatus(status, page, size);
+            return ApiResponseFactory.success(
+                users, 
+                "Usuarios recuperados exitosamente", 
+                Map.of("status", status.name(), "paginated", true)
+            );
+        } else {
+            List<UserResponse> users = userService.getUsersByStatus(status);
+            return ApiResponseFactory.success(
+                users, 
+                "Usuarios recuperados exitosamente", 
+                Map.of("status", status.name(), "count", users.size(), "paginated", false)
+            );
+        }
     }
     
     @GetMapping("/active")
-    public ResponseEntity<List<UserResponse>> getActiveUsers() {
-        List<UserResponse> users = userService.getActiveUsers();
-        return ResponseEntity.ok(users);
+    public ResponseEntity<?> getActiveUsers(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size
+    ) {
+        if (page != null && size != null) {
+            PagedResponse<UserResponse> users = userService.getActiveUsers(page, size);
+            return ApiResponseFactory.success(
+                users, 
+                "Usuarios activos recuperados con éxito", 
+                Map.of("paginated", true)
+            );
+        } else {
+            List<UserResponse> users = userService.getActiveUsers();
+            return ApiResponseFactory.success(
+                users, 
+                "Usuarios activos recuperados con éxito", 
+                Map.of("count", users.size(), "paginated", false)
+            );
+        }
     }
     
     @GetMapping("/search")
-    public ResponseEntity<List<UserResponse>> searchUsersByName(@RequestParam String name) {
-        List<UserResponse> users = userService.searchUsersByName(name);
-        return ResponseEntity.ok(users);
+    public ResponseEntity<?> searchUsersByName(
+            @RequestParam String q,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(defaultValue = "firstName") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDirection
+    ) {
+        if (page != null && size != null) {
+            PagedResponse<UserResponse> users = userService.searchUsersByName(q, page, size, sortBy, sortDirection);
+            return ApiResponseFactory.success(
+                users, 
+                "Usuarios encontrados exitosamente", 
+                Map.of("searchTerm", q, "paginated", true)
+            );
+        } else {
+            List<UserResponse> users = userService.searchUsersByName(q);
+            return ApiResponseFactory.success(
+                users, 
+                "Usuarios encontrados exitosamente", 
+                Map.of("searchTerm", q, "count", users.size(), "paginated", false)
+            );
+        }
     }
 
     // ==================== UPDATE ====================
     
     @PutMapping("/{id}")
-    public ResponseEntity<UserResponse> updateUser(
+    public ResponseEntity<ApiResponse<UserResponse>> updateUser(
             @PathVariable UUID id,
             @Valid @RequestBody UserUpdateRequest request) {
         UserResponse user = userService.updateUser(id, request);
-        return ResponseEntity.ok(user);
+        return ApiResponseFactory.success(user, "Usuario actualizado con éxito", null);
     }
     
     @PatchMapping("/{id}/password")
-    public ResponseEntity<Void> changePassword(
+    public ResponseEntity<ApiResponse<Void>> changePassword(
             @PathVariable UUID id,
             @Valid @RequestBody UserPasswordChangeRequest request) {
         userService.changePassword(id, request);
-        return ResponseEntity.noContent().build();
+        return ApiResponseFactory.success(null, "La contraseña se cambió correctamente", null);
     }
     
     @PatchMapping("/{id}/activate")
-    public ResponseEntity<Void> activateUser(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<Void>> activateUser(@PathVariable UUID id) {
         userService.activateUser(id);
-        return ResponseEntity.noContent().build();
+        return ApiResponseFactory.success(null, "Usuario activado exitosamente", null);
     }
     
     @PatchMapping("/{id}/deactivate")
-    public ResponseEntity<Void> deactivateUser(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<Void>> deactivateUser(@PathVariable UUID id) {
         userService.deactivateUser(id);
-        return ResponseEntity.noContent().build();
+        return ApiResponseFactory.success(null, "Usuario desactivado con éxito", null);
     }
 
     // ==================== DELETE ====================
     
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable UUID id) {
-        userService.deleteUser(id); // Soft delete
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable UUID id) {
+        userService.deleteUser(id);
+        return ApiResponseFactory.success(null, "Usuario removido exitosamente", null);
     }
     
     @DeleteMapping("/{id}/hard")
-    public ResponseEntity<Void> hardDeleteUser(@PathVariable UUID id) {
-        userService.hardDeleteUser(id); // Hard delete
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<ApiResponse<Void>> hardDeleteUser(@PathVariable UUID id) {
+        userService.hardDeleteUser(id);
+        return ApiResponseFactory.success(null, "Usuario eliminado permanentemente", null);
     }
 
     // ==================== STATISTICS ====================
     
     @GetMapping("/count/role/{role}")
-    public ResponseEntity<Long> countUsersByRole(@PathVariable UserRole role) {
+    public ResponseEntity<ApiResponse<Long>> countUsersByRole(@PathVariable UserRole role) {
         long count = userService.countUsersByRole(role);
-        return ResponseEntity.ok(count);
+        return ApiResponseFactory.success(
+            count, 
+            "Conteo recuperado exitosamente", 
+            Map.of("role", role.name())
+        );
     }
     
     @GetMapping("/count/status/{status}")
-    public ResponseEntity<Long> countUsersByStatus(@PathVariable UserStatus status) {
+    public ResponseEntity<ApiResponse<Long>> countUsersByStatus(@PathVariable UserStatus status) {
         long count = userService.countUsersByStatus(status);
-        return ResponseEntity.ok(count);
+        return ApiResponseFactory.success(
+            count, 
+            "Conteo recuperado exitosamente", 
+            Map.of("status", status.name())
+        );
     }
 }
