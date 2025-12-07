@@ -22,7 +22,7 @@ export const userService = {
 		if (params.status) queryParams.append('status', params.status)
 
 		const queryString = queryParams.toString()
-		const url = queryString ? `/users?${queryString}` : '/users'
+		const url = queryString ? `/users?q=${queryString}` : '/users'
 
 		return await authService.apiRequest({
 			method: 'GET',
@@ -51,7 +51,7 @@ export const userService = {
 	async softDelete(userId) {
 		return await authService.apiRequest({
 			method: 'DELETE',
-			url: `/users/${userId}/soft`,
+			url: `/users/${userId}`,
 		})
 	},
 

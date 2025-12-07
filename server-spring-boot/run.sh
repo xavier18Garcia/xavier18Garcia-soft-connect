@@ -8,4 +8,5 @@ set +a
 
 ./gradlew clean build
 ./gradlew clean bin
+./gradlew clean build --refresh-dependencies
 ./gradlew bootRun

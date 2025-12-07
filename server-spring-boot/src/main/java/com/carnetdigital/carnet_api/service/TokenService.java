@@ -161,20 +161,20 @@ public class TokenService {
     @Transactional
     public AuthTokenResponse generateAuthTokens(User user) {
         // Invalidar tokens anteriores del mismo tipo
-        invalidateUserTokensByType(user.getId(), TokenType.ACCESS);
-        invalidateUserTokensByType(user.getId(), TokenType.REFRESH);
+        invalidateUserTokensByType(user.getId(), TokenType.access);
+        invalidateUserTokensByType(user.getId(), TokenType.refresh);
 
         // Crear access token
         Token accessToken = new Token();
         accessToken.setUser(user);
-        accessToken.setTokenType(TokenType.ACCESS);
+        accessToken.setTokenType(TokenType.access);
         accessToken.setToken(generateTokenString());
         tokenRepository.save(accessToken);
 
         // Crear refresh token
         Token refreshToken = new Token();
         refreshToken.setUser(user);
-        refreshToken.setTokenType(TokenType.REFRESH);
+        refreshToken.setTokenType(TokenType.refresh);
         refreshToken.setToken(generateTokenString());
         tokenRepository.save(refreshToken);
 
@@ -203,7 +203,7 @@ public class TokenService {
             throw new RuntimeException("Refresh token is invalid or expired");
         }
 
-        if (refreshToken.getTokenType() != TokenType.REFRESH) {
+        if (refreshToken.getTokenType() != TokenType.refresh) {
             throw new RuntimeException("Token is not a refresh token");
         }
 
@@ -212,7 +212,7 @@ public class TokenService {
         
         Token newAccessToken = new Token();
         newAccessToken.setUser(user);
-        newAccessToken.setTokenType(TokenType.ACCESS);
+        newAccessToken.setTokenType(TokenType.access);
         newAccessToken.setToken(generateTokenString());
         tokenRepository.save(newAccessToken);
 
