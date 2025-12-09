@@ -26,12 +26,13 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
-
+    
+    //@Transactional es una anotación de Spring que sirve para manejar transacciones en métodos que interactúan con la base de datos.
     @Transactional
     public UserResponse createUser(UserCreateRequest request) {
         // Verificar si el email existe incluyendo usuarios eliminados
         if (userRepository.existsByEmailIncludingDeleted(request.getEmail())) {
-            throw new RuntimeException("Email already exists");
+            throw new RuntimeException("Email en uso");
         }
 
         User user = userMapper.toEntity(request);
@@ -44,14 +45,14 @@ public class UserService {
     @Transactional(readOnly = true)
     public UserDetailResponse getUserById(UUID id) {
         User user = userRepository.findByIdIncludingDeleted(id)
-            .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + id));
         return userMapper.toDetailResponse(user);
     }
 
     @Transactional(readOnly = true)
     public UserResponse getUserByEmail(String email) {
         User user = userRepository.findByEmailIncludingDeleted(email)
-            .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado por el email: " + email));
         return userMapper.toResponse(user);
     }
 
@@ -266,16 +267,16 @@ public class UserService {
     @Transactional
     public UserResponse updateUser(UUID id, UserUpdateRequest request) {
         User user = userRepository.findByIdIncludingDeleted(id)
-            .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado con id: " + id));
 
         // No permitir actualizar usuarios eliminados
         if (user.getDeletedAt() != null) {
-            throw new RuntimeException("Cannot update a deleted user");
+            throw new RuntimeException("No se puede actualizar un usuario eliminado");
         }
 
         if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())) {
             if (userRepository.existsByEmailIncludingDeleted(request.getEmail())) {
-                throw new RuntimeException("Email already exists");
+                throw new RuntimeException("El correo electrónico ya existe");
             }
         }
 
@@ -287,19 +288,19 @@ public class UserService {
     @Transactional
     public void changePassword(UUID id, UserPasswordChangeRequest request) {
         User user = userRepository.findByIdIncludingDeleted(id)
-            .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado con id: " + id));
 
         // No permitir cambiar contraseña de usuarios eliminados
         if (user.getDeletedAt() != null) {
-            throw new RuntimeException("Cannot change password for a deleted user");
+            throw new RuntimeException("No se puede cambiar la contraseña de un usuario eliminado");
         }
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-            throw new RuntimeException("Current password is incorrect");
+            throw new RuntimeException("La contraseña actual es incorrecta");
         }
 
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
-            throw new RuntimeException("Passwords do not match");
+            throw new RuntimeException("Las contraseñas no coinciden");
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
@@ -309,11 +310,11 @@ public class UserService {
     @Transactional
     public void activateUser(UUID id) {
         User user = userRepository.findByIdIncludingDeleted(id)
-            .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado con id: " + id));
 
         // No permitir activar usuarios eliminados
         if (user.getDeletedAt() != null) {
-            throw new RuntimeException("Cannot activate a deleted user");
+            throw new RuntimeException("No se puede activar un usuario eliminado");
         }
 
         user.setActive(true);
@@ -324,11 +325,11 @@ public class UserService {
     @Transactional
     public void deactivateUser(UUID id) {
         User user = userRepository.findByIdIncludingDeleted(id)
-            .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado con id: " + id));
 
         // No permitir desactivar usuarios eliminados
         if (user.getDeletedAt() != null) {
-            throw new RuntimeException("Cannot deactivate a deleted user");
+            throw new RuntimeException("No se puede desactivar un usuario eliminado");
         }
 
         user.setActive(false);
@@ -339,7 +340,7 @@ public class UserService {
     @Transactional
     public void deleteUser(UUID id) {
         User user = userRepository.findByIdIncludingDeleted(id)
-            .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+            .orElseThrow(() -> new RuntimeException(": " + id));
 
         // Solo eliminar si no está ya eliminado
         if (user.getDeletedAt() == null) {

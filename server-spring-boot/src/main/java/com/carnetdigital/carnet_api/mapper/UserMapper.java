@@ -103,7 +103,7 @@ public class UserMapper {
         }
     }
     
-    // List conversions
+    // List users
     public List<UserResponse> toResponseList(List<User> users) {
         if (users == null) return null;
         return users.stream()

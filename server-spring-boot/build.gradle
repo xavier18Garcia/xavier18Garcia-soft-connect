@@ -1,7 +1,7 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '4.0.0'
-    id 'io.spring.dependency-management' version '1.1.7'
+    id 'org.springframework.boot' version '4.0.0' // Plugin principal para crear apps Spring Boot
+    id 'io.spring.dependency-management' version '1.1.7' // Gestión automática de versiones de dependencias
 }
 
 group = 'com.carnetdigital'
@@ -10,50 +10,98 @@ description = 'API REST para sistema de carnet digital'
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(24)
+        languageVersion = JavaLanguageVersion.of(23) // Se configura el proyecto para usar Java 23
     }
 }
 
 configurations {
     compileOnly {
-        extendsFrom annotationProcessor
+        extendsFrom annotationProcessor // Permite que Lombok procese anotaciones correctamente
     }
 }
 
 repositories {
-    mavenCentral()
+    mavenCentral() // Repositorio oficial de dependencias
 }
 
 dependencies {
+    // ----------------------------
     // Spring Boot Starters
+    // ----------------------------
+
+    // JPA + Hibernate (para trabajar con bases de datos SQL usando ORM)
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+    // Seguridad (manejo de autenticación, autorización, filtros security, bcrypt, etc.)
     implementation 'org.springframework.boot:spring-boot-starter-security' 
+
+    // Validación (permite usar anotaciones como @NotBlank, @Email, @Size, etc.)
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // Web MVC (manejo de controladores REST, JSON, rutas HTTP)
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
     
-    // ✅ JWT Dependencies (Las 3 deben estar aquí)
-    implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
-    implementation 'io.jsonwebtoken:jjwt-impl:0.12.5'
-    implementation 'io.jsonwebtoken:jjwt-jackson:0.12.5'
     
+    // ----------------------------
+    // JWT (JSON Web Tokens)
+    // ----------------------------
+
+    // Librería JJWT de io.jsonwebtoken para crear, firmar y validar tokens JWT
+    // Se requieren estas 3 dependencias juntas
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.5'      // API principal
+    implementation 'io.jsonwebtoken:jjwt-impl:0.12.5'     // Implementación interna
+    implementation 'io.jsonwebtoken:jjwt-jackson:0.12.5'  // Conversión JSON con Jackson
+
+
+    // ----------------------------
     // Lombok
+    // ----------------------------
+
+    // Ayuda a evitar código repetitivo (getters, setters, constructores, builders)
     compileOnly 'org.projectlombok:lombok'
+
+    // Procesa anotaciones de Lombok en tiempo de compilación
     annotationProcessor 'org.projectlombok:lombok'
     
+    
+    // ----------------------------
     // PostgreSQL
+    // ----------------------------
+
+    // Driver JDBC de PostgreSQL, necesario para conectarse a la base de datos
+    // Solo se incluye en tiempo de ejecución, no en compilación
     runtimeOnly 'org.postgresql:postgresql'
     
-    // Development Tools
+    
+    // ----------------------------
+    // Herramientas de Desarrollo
+    // ----------------------------
+
+    // DevTools: reinicio automático, LiveReload y desactivación de cachés durante el desarrollo
+    // No se incluye en producción
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     
-    // Testing
+    
+    // ----------------------------
+    // Dependencias de Testing
+    // ----------------------------
+
+    // Pruebas de JPA (repositorios, entidades, queries)
     testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
+
+    // Testing para seguridad (configuración, filtros, autenticación falsa)
     testImplementation 'org.springframework.boot:spring-boot-starter-security-test' 
+
+    // Testing para validaciones (simulación de errores en DTOs)
     testImplementation 'org.springframework.boot:spring-boot-starter-validation-test'
+
+    // Testing para controladores Web MVC (MockMvc, peticiones simuladas)
     testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+
+    // Plataforma de ejecución JUnit
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.named('test') {
-    useJUnitPlatform()
+    useJUnitPlatform() // Usa JUnit 5 para correr pruebas
 }

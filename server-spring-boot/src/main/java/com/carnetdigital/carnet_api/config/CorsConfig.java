@@ -23,6 +23,7 @@ public class CorsConfig {
         
         // Orígenes permitidos (tu frontend)
         config.setAllowedOrigins(Arrays.asList(
+            "http://localhost:5173",
             "http://localhost:5174"
         ));
         

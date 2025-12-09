@@ -15,19 +15,19 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class UserCreateRequest {
     
-    @Size(max = 42, message = "First name must not exceed 42 characters")
+    @Size(max = 42, message = "El nombre no debe exceder los 42 caracteres")
     private String firstName;
     
-    @Size(max = 42, message = "Last name must not exceed 42 characters")
+    @Size(max = 42, message = "El apellido no debe exceder los 42 caracteres")
     private String lastName;
     
-    @NotBlank(message = "Email is required")
-    @Email(message = "Email must be valid")
-    @Size(max = 100, message = "Email must not exceed 100 characters")
+    @NotBlank(message = "El correo es obligatorio")
+    @Email(message = "El correo debe ser válido")
+    @Size(max = 100, message = "El correo no debe exceder los 100 caracteres")
     private String email;
     
-    @NotBlank(message = "Password is required")
-    @Size(min = 8, max = 60, message = "Password must be between 8 and 60 characters")
+    @NotBlank(message = "La contraseña es obligatoria")
+    @Size(min = 8, max = 60, message = "La contraseña debe tener entre 8 y 60 caracteres")
     private String password;
     
     private UserRole role;
